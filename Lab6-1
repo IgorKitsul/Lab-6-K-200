@@ -1,0 +1,88 @@
+import java.io.*;
+import java.util.*;
+
+public class WeatherApp {
+    public static void main(String[] args) {
+        List<String> rawData = new ArrayList<>();
+        List<Record> records = new ArrayList<>();
+
+        try (BufferedReader reader = new BufferedReader(new FileReader("weather.txt"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                rawData.add(line);
+            }
+        } catch (IOException e) {
+            System.out.println("Помилка при читанні файлу: " + e.getMessage());
+            return;
+        }
+
+        for (String line : rawData) {
+            try {
+                String[] parts = line.split(";");
+                if (parts.length != 2)
+                    throw new IllegalArgumentException("Неправильний формат рядка: " + line);
+
+                String date = parts[0];
+                double temp = Double.parseDouble(parts[1]);
+
+                if (!date.matches("\\d{2}:\\d{2}"))
+                    throw new IllegalArgumentException("Неправильний формат дати: " + date);
+
+                records.add(new Record(date, temp));
+            } catch (Exception e) {
+                System.out.println("Пропущено рядок через помилку: " + e.getMessage());
+            }
+        }
+
+        Map<Integer, List<Double>> tempsByMonth = new HashMap<>();
+        for (Record r : records) {
+            int month = r.getMonth();
+            tempsByMonth.putIfAbsent(month, new ArrayList<>());
+            tempsByMonth.get(month).add(r.temperature);
+        }
+
+        System.out.println("Місяць\tСередня температура");
+        double maxAvg = Double.NEGATIVE_INFINITY;
+        int hottestMonth = -1;
+
+        for (int month = 1; month <= 12; month++) {
+            List<Double> temps = tempsByMonth.get(month);
+            if (temps != null && !temps.isEmpty()) {
+                double avg = temps.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+                System.out.printf("%s\t%.2f\n", getMonthName(month), avg);
+                if (avg > maxAvg) {
+                    maxAvg = avg;
+                    hottestMonth = month;
+                }
+            }
+        }
+
+        if (hottestMonth != -1) {
+            System.out.println("\nНайспекотніший місяць: " + getMonthName(hottestMonth));
+        } else {
+            System.out.println("Немає даних для аналізу.");
+        }
+    }
+
+    static class Record {
+        String date; 
+        double temperature;
+
+        public Record(String date, double temperature) {
+            this.date = date;
+            this.temperature = temperature;
+        }
+
+        public int getMonth() {
+            return Integer.parseInt(date.split(":")[1]);
+        }
+    }
+
+    public static String getMonthName(int month) {
+        String[] names = {
+            "Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень",
+            "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"
+        };
+        return (month >= 1 && month <= 12) ? names[month - 1] : "Невідомо";
+    }
+}
