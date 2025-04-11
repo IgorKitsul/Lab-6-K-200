@@ -1,0 +1,218 @@
+# Lab-6-K-200
+import java.io.*;
+import java.util.*;
+
+public class StorageApp {
+    private static final String FILE_NAME = "storage.txt";
+    private static final Scanner scanner = new Scanner(System.in);
+    private static List<Item> items = new ArrayList<>();
+
+    public static void main(String[] args) {
+        loadItems();
+        while (true) {
+            System.out.println("--- Меню ---");
+            System.out.println("d - додати запис");
+            System.out.println("p - пошук");
+            System.out.println("r - редагувати");
+            System.out.println("x - видалити");
+            System.out.println("s - сортувати");
+            System.out.println("v - вивести всі записи");
+            System.out.println("Enter - вихід");
+            System.out.print("Ваш вибір: ");
+            String choice = scanner.nextLine().trim();
+            switch (choice) {
+                case "d" -> addItem();
+                case "p" -> searchItem();
+                case "r" -> editItem();
+                case "x" -> deleteItem();
+                case "s" -> sortItems();
+                case "v" -> displayItems();
+                case "" -> {
+                    saveItems();
+                    return;
+                }
+                default -> System.out.println("Невідомий вибір. Спробуйте ще раз.");
+            }
+        }
+    }
+
+    // === Клас Item ===
+    static class Item {
+        private String surname;
+        private String date;
+        private int days;
+        private int id;
+        private String name;
+
+        public Item() {}
+
+        public Item(String surname, String date, int days, int id, String name) {
+            this.surname = surname;
+            this.date = date;
+            this.days = days;
+            this.id = id;
+            this.name = name;
+        }
+
+        public String getSurname() { return surname; }
+        public void setSurname(String surname) { this.surname = surname; }
+
+        public String getDate() { return date; }
+        public void setDate(String date) { this.date = date; }
+
+        public int getDays() { return days; }
+        public void setDays(int days) { this.days = days; }
+
+        public int getId() { return id; }
+        public void setId(int id) { this.id = id; }
+
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+
+        @Override
+        public String toString() {
+            return id + ". " + surname + ", " + name + ", " + date + ", " + days + " днів";
+        }
+
+        public String toFileString() {
+            return id + ";" + surname + ";" + name + ";" + date + ";" + days;
+        }
+    }
+
+    // === Завантаження з файла ===
+    private static void loadItems() {
+        try (BufferedReader reader = new BufferedReader(new FileReader(FILE_NAME))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(";");
+                if (parts.length == 5) {
+                    int id = Integer.parseInt(parts[0]);
+                    String surname = parts[1];
+                    String name = parts[2];
+                    String date = parts[3];
+                    int days = Integer.parseInt(parts[4]);
+                    items.add(new Item(surname, date, days, id, name));
+                }
+            }
+        } catch (IOException | NumberFormatException e) {
+            System.out.println("Помилка при зчитуванні файлу: " + e.getMessage());
+        }
+    }
+
+    // === Збереження у файл ===
+    private static void saveItems() {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(FILE_NAME))) {
+            for (Item item : items) {
+                writer.println(item.toFileString());
+            }
+        } catch (IOException e) {
+            System.out.println("Помилка при збереженні файлу: " + e.getMessage());
+        }
+    }
+
+    // === Додати ===
+    private static void addItem() {
+        try {
+            System.out.print("Прізвище: ");
+            String surname = scanner.nextLine().trim();
+            if (surname.isEmpty()) {
+                System.out.println("Прізвище не може бути порожнім.");
+                return;
+            }
+    
+            System.out.print("Дата здачі (ДД.ММ): ");
+            String date = scanner.nextLine().trim();
+    
+            System.out.print("Термін зберігання (днів): ");
+            int days = Integer.parseInt(scanner.nextLine());
+    
+            System.out.print("Інвентарний номер: ");
+            int id = Integer.parseInt(scanner.nextLine());
+    
+            System.out.print("Назва предмета: ");
+            String name = scanner.nextLine().trim();
+            if (name.isEmpty()) {
+                System.out.println("Назва предмета не може бути порожньою.");
+                return;
+            }
+    
+            items.add(new Item(surname, date, days, id, name));
+            System.out.println("Запис додано.");
+        } catch (Exception e) {
+            System.out.println("Помилка введення: " + e.getMessage());
+        }
+    }
+    
+
+    // === Вивести всі ===
+    private static void displayItems() {
+        if (items.isEmpty()) {
+            System.out.println("Список порожній.");
+        } else {
+            System.out.println("Список предметів:");
+            for (Item item : items) {
+                System.out.println(item);
+            }
+        }
+    }
+
+    // === Пошук ===
+    private static void searchItem() {
+        System.out.print("Введіть прізвище для пошуку: ");
+        String query = scanner.nextLine().toLowerCase();
+        for (Item item : items) {
+            if (item.getSurname().toLowerCase().contains(query)) {
+                System.out.println(item);
+            }
+        }
+    }
+
+    // === Редагування ===
+    private static void editItem() {
+        System.out.print("Введіть інвентарний номер для редагування: ");
+        try {
+            int id = Integer.parseInt(scanner.nextLine());
+            for (Item item : items) {
+                if (item.getId() == id) {
+                    System.out.print("Нове прізвище: ");
+                    item.setSurname(scanner.nextLine());
+                    System.out.print("Нова дата (ДД.ММ): ");
+                    item.setDate(scanner.nextLine());
+                    System.out.print("Новий термін зберігання: ");
+                    item.setDays(Integer.parseInt(scanner.nextLine()));
+                    System.out.print("Нова назва предмета: ");
+                    item.setName(scanner.nextLine());
+                    System.out.println("Запис оновлено.");
+                    return;
+                }
+            }
+            System.out.println("Запис не знайдено.");
+        } catch (Exception e) {
+            System.out.println("Помилка редагування: " + e.getMessage());
+        }
+    }
+
+    // === Видалення ===
+    private static void deleteItem() {
+        System.out.print("Введіть інвентарний номер для видалення: ");
+        try {
+            int id = Integer.parseInt(scanner.nextLine());
+            items.removeIf(item -> item.getId() == id);
+            System.out.println("Запис видалено (якщо існував).");
+        } catch (Exception e) {
+            System.out.println("Помилка при видаленні: " + e.getMessage());
+        }
+    }
+
+    // === Сортування ===
+    private static void sortItems() {
+        System.out.println("Сортувати за: 1 - Прізвище, 2 - Дата, 3 - ІД");
+        String key = scanner.nextLine();
+        switch (key) {
+            case "1" -> items.sort(Comparator.comparing(Item::getSurname));
+            case "2" -> items.sort(Comparator.comparing(Item::getDate));
+            case "3" -> items.sort(Comparator.comparingInt(Item::getId));
+            default -> System.out.println("Невідомий вибір сортування.");
+        }
+    }
+}
